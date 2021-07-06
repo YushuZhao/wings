@@ -1,8 +1,9 @@
 import React, { useState, useEffect, memo } from 'react';
+import PubSub from 'pubsub-js';
 import { Select } from 'wings';
 
 const TerritorySelect = memo(
-  ({ onChange, label = '', style, name, choose, isSearch }) => {
+  ({ choose, isSearch, name, onChange, ...restProps }) => {
     const [value, setValue] = useState(undefined);
     const [data, setData] = useState([]);
 
@@ -14,10 +15,21 @@ const TerritorySelect = memo(
           { id: 2, name: '丰台区' },
           { id: 3, name: '朝阳区' },
         ];
+        setValue(list[0].id);
         setData(list);
         // 回调choose方法,初始化config
         choose && isSearch && choose.setConfig(name, list[0].id);
       }, 100);
+    }, []);
+
+    useEffect(() => {
+      let handleSubscribe = (msg, values) => {
+        setValue(values[name]);
+      };
+      let id = PubSub.subscribe('RESET', handleSubscribe);
+      return () => {
+        PubSub.unsubscribe(id);
+      };
     }, []);
 
     // 约定event,之后由Choose容器统一管理
@@ -26,17 +38,18 @@ const TerritorySelect = memo(
     }, [value]);
 
     return (
-      <div style={style}>
-        <div style={{ display: 'inline-block' }}>
-          {label && <span>{`${label}: `}</span>}
-        </div>
-        <div style={{ display: 'inline-block', minWidth: 85 }}>
-          {data.length ? (
-            <Select initialValue={data[0].id} data={data} onChange={setValue} />
-          ) : (
-            []
-          )}
-        </div>
+      <div>
+        {data.length ? (
+          <Select
+            value={value}
+            defaultValue={data[0].id}
+            data={data}
+            onChange={setValue}
+            {...restProps}
+          />
+        ) : (
+          []
+        )}
       </div>
     );
   },

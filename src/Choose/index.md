@@ -1,11 +1,9 @@
 ## Choose
 
-Examples:
-
 ```jsx
 /**
- * title: 基础查询
- * desc: 组件展示及查询
+ * title: 基本使用
+ * desc: 组件展示及查询。
  */
 import React, { useState, useEffect } from 'react';
 
@@ -33,8 +31,11 @@ export default () => {
   return (
     <div>
       <Choose choose={choose} layout="horizontal">
-        <Select name="default-select" initialValue={data[0].id} data={data} />
-        <TerritorySelect name="territory-select" />
+        <TerritorySelect
+          name="territory-select"
+          label="属地"
+          style={{ width: 140 }}
+        />
         <Button name="search-button" text="查询" htmlType="submit" />
       </Choose>
       <div>{text}</div>
@@ -69,7 +70,11 @@ export default () => {
   return (
     <div>
       <Choose choose={choose} layout="horizontal">
-        <Select name="default-select" initialValue={data[0].id} data={data} />
+        <TerritorySelect
+          name="territory-select"
+          label="属地"
+          style={{ width: 140 }}
+        />
 
         <Button name="search-button" text="查询" htmlType="submit" />
         <Button name="reset-button" text="重置" htmlType="reset" />

@@ -1,21 +1,23 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
+import PubSub from 'pubsub-js';
 
 import './style.css';
 
 /**
  * 覆盖子组件的相应event
  * @param {*} choose useChoose中各种方法
- * @param {*} config 对象,包含所有查询条件的键值
  * @param {*} isSearch 是否有查询按钮
+ * @param {*} initialConfig allconfig初始值
  * @returns 返回所有子组件
  */
-const coverageHandlers = (choose, isSearch) => {
+const coverageHandlers = (choose, isSearch, initialConfig) => {
   return (child) => {
     const { props } = child;
-    const { prefix, key, name } = props;
+    const { prefix, key, name, htmlType } = props;
     const configKey = name || `${key}-${prefix}`;
     let event = {};
-    let config = choose.getAllConfig();
+    let configs = choose.getAllConfig() || {};
+    // useChoose.js: getAllConfig方法中, 若config中含有undefined的数据,则返回undefined
 
     switch (prefix) {
       case 'input':
@@ -23,13 +25,18 @@ const coverageHandlers = (choose, isSearch) => {
       case 'radio':
       case 'cascader':
         event.onChange = (v) => {
-          config[configKey] = v;
+          configs[configKey] = v;
           !isSearch && choose.setConfig(configKey, v);
         };
         break;
       case 'button':
         event.onClick = () => {
-          choose.setAllConfig({ ...config });
+          if (htmlType === 'reset') {
+            PubSub.publish('RESET', initialConfig);
+            choose.resetAllConfig(initialConfig);
+          } else {
+            choose.setAllConfig({ ...configs });
+          }
         };
         break;
     }
@@ -44,16 +51,27 @@ const coverageHandlers = (choose, isSearch) => {
 };
 
 const Choose = memo((props) => {
-  const {
-    children,
-    layout = 'horizontal',
-    style,
-    isSearch = false,
-    choose,
-  } = props;
+  console.log('Choose 运行了');
+  const { children, layout = 'horizontal', style, choose } = props;
+
+  let isSearch = false;
+  children.map((item) => {
+    const { htmlType } = item.props;
+    if (htmlType && htmlType === 'submit') {
+      isSearch = true;
+    }
+  });
+
+  const initialConfig = useMemo(() => {
+    const configs = choose.getAllConfig();
+    return { ...configs };
+  }, [choose.mounted]);
 
   const renderChildren = useCallback(() => {
-    return React.Children.map(children, coverageHandlers(choose, isSearch));
+    return React.Children.map(
+      children,
+      coverageHandlers(choose, isSearch, initialConfig),
+    );
   }, [children]);
 
   return (
